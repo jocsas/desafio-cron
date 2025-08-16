@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const fs = require('fs').promises;
 const path = require('path');
 
-require('dotenv').config();
+require('dotenv-flow').config();
 
 const app = express();
 const PORT = process.env.RECEIVER_API_PORT || 3002;
