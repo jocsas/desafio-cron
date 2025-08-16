@@ -102,7 +102,7 @@ export default function CronList({ onEdit }) {
 
       <Dialog open={openDialog} onClose={handleDialogClose}>
         <DialogTitle>
-          Tem certeza que deseja deletar "{selectedCron?.body}"?
+          Tem certeza que deseja deletar "{selectedCron?.id}"?
         </DialogTitle>
         <DialogActions>
           <Button onClick={handleDialogClose} color="primary">
