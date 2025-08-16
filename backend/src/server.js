@@ -1,7 +1,7 @@
 const express = require('express');
 const helmet = require('helmet')
 const cors = require('cors')
-require('dotenv').config();
+require('dotenv-flow').config();
 
 const cronRoutes = require('./routes/cronRoutes.js');
 
@@ -10,6 +10,7 @@ const PORT = process.env.SERVER_API_PORT || 3001;
 
 const whiteList = [
   'http://localhost:3000',
+  'http://localhost:5173',
 ];
 
 const corsOptions = {
