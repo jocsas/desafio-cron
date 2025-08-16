@@ -1,24 +1,7 @@
 import { useState, useEffect } from "react";
 import { createCron, updateCron } from "../services/cronApi";
-import {
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-  Radio,
-  FormControlLabel,
-  RadioGroup,
-  Stack,
-  Snackbar,
-  Alert
-} from "@mui/material";
-
-function simpleToCron({ minutes, hours, days }) {
-  const minPart = minutes ? `*/${minutes}` : "*";
-  const hourPart = hours ? `*/${hours}` : "*";
-  const dayPart = days ? `*/${days}` : "*";
-  return `${minPart} ${hourPart} ${dayPart} * *`;
-}
+import { TextField, Button, Stack, Snackbar, Alert } from "@mui/material";
+import { isValidCron } from "cron-validator";
 
 export default function CronForm({ cron, onSuccess }) {
   const [cronData, setCronData] = useState({
@@ -26,27 +9,20 @@ export default function CronForm({ cron, onSuccess }) {
     httpMethod: "POST",
     body: "",
     timeZone: "UTC",
-    mode: "simple",
-    minutes: "",
-    hours: "",
-    days: "",
     cronExp: "",
   });
 
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
+  const [cronError, setCronError] = useState("");
+
   useEffect(() => {
     if (cron) {
-      const isSimple = !cron.schedule.includes("* * * * *") || false;
       setCronData({
         uri: cron.uri || "",
         httpMethod: cron.httpMethod || "POST",
         body: cron.body || "",
         timeZone: cron.timeZone || "UTC",
-        mode: isSimple ? "simple" : "cron",
-        minutes: cron.minutes || "",
-        hours: cron.hours || "",
-        days: cron.days || "",
         cronExp: cron.schedule || "",
       });
     }
@@ -54,13 +30,24 @@ export default function CronForm({ cron, onSuccess }) {
 
   const handleChange = (field) => (e) => {
     setCronData((prev) => ({ ...prev, [field]: e.target.value }));
+    if (field === "cronExp") {
+      if (!isValidCron(e.target.value, { alias: true, seconds: false })) {
+        setCronError("Expressão CRON inválida!");
+      } else {
+        setCronError("");
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { mode, minutes, hours, days, cronExp, ...rest } = cronData;
-    const schedule =
-      mode === "simple" ? simpleToCron({ minutes, hours, days }) : cronExp;
+    if (cronError) {
+      setSnackbar({ open: true, message: "Corrija a expressão CRON antes de salvar", severity: "error" });
+      return;
+    }
+
+    const { cronExp, ...rest } = cronData;
+    const schedule = cronExp;
 
     try {
       if (cron?.id) {
@@ -91,14 +78,6 @@ export default function CronForm({ cron, onSuccess }) {
             onChange={handleChange("uri")}
             required
           />
-          <Select
-            value={cronData.httpMethod}
-            onChange={handleChange("httpMethod")}
-          >
-            {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
-              <MenuItem key={m} value={m}>{m}</MenuItem>
-            ))}
-          </Select>
           <TextField
             label="Body"
             value={cronData.body}
@@ -109,38 +88,13 @@ export default function CronForm({ cron, onSuccess }) {
             value={cronData.timeZone}
             onChange={handleChange("timeZone")}
           />
-
-          <RadioGroup row value={cronData.mode} onChange={handleChange("mode")}>
-            <FormControlLabel value="simple" control={<Radio />} label="Simples" />
-            <FormControlLabel value="cron" control={<Radio />} label="CRON" />
-          </RadioGroup>
-
-          {cronData.mode === "simple" ? (
-            <Stack direction="row" spacing={1}>
-              <TextField
-                label="Minutos"
-                value={cronData.minutes}
-                onChange={handleChange("minutes")}
-              />
-              <TextField
-                label="Horas"
-                value={cronData.hours}
-                onChange={handleChange("hours")}
-              />
-              <TextField
-                label="Dias"
-                value={cronData.days}
-                onChange={handleChange("days")}
-              />
-            </Stack>
-          ) : (
-            <TextField
-              label="Expressão CRON"
-              value={cronData.cronExp}
-              onChange={handleChange("cronExp")}
-            />
-          )}
-
+          <TextField
+            label="Expressão CRON"
+            value={cronData.cronExp}
+            onChange={handleChange("cronExp")}
+            error={!!cronError}
+            helperText={cronError || "Ex.: */5 * * * *"}
+          />
           <Button variant="contained" color="primary" type="submit">
             {cron?.id ? "Atualizar CRON" : "Criar CRON"}
           </Button>
