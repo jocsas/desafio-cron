@@ -2,6 +2,8 @@ const express = require('express');
 const helmet = require('helmet')
 const cors = require('cors')
 
+const cronRoutes = require('./routes/cronRoutes.js');
+
 const app = express();
 const PORT = process.env.SERVER_API_PORT || 3001;
 
@@ -27,6 +29,8 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+app.use('/api/crons', cronRoutes)
 
 async function startServer() {
   try {
