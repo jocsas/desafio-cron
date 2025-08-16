@@ -29,6 +29,7 @@ export default function CronForm({ cron, onSuccess }) {
   });
   const [cronError, setCronError] = useState("");
   const [bodyError, setBodyError] = useState("");
+  const [urlError, setUrlError] = useState("");
 
   useEffect(() => {
     if (cron) {
@@ -62,11 +63,20 @@ export default function CronForm({ cron, onSuccess }) {
         setBodyError("JSON inválido!");
       }
     }
+
+    if (field === "uri") {
+      try {
+        new URL(value);
+        setUrlError("");
+      } catch {
+        setUrlError("URL inválida!");
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (cronError || bodyError) {
+    if (cronError || bodyError || urlError) {
       setSnackbar({
         open: true,
         message: "Corrija os erros antes de salvar",
@@ -129,6 +139,8 @@ export default function CronForm({ cron, onSuccess }) {
             label="URL"
             value={cronData.uri}
             onChange={handleChange("uri")}
+            error={!!urlError}
+            helperText={urlError || "Ex.: https://meu-servidor.com/webhook"}
             required
           />
 
