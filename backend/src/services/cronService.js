@@ -1,5 +1,5 @@
-const cron = require('node-cron');
-const axios = require('axios');
+const cron = require("node-cron");
+const axios = require("axios");
 
 class CronService {
   constructor() {
@@ -7,10 +7,9 @@ class CronService {
   }
 
   // Criar um novo CRON
-  create({ id, schedule, uri, method = 'GET', body = null, timeZone = 'UTC' }) {
-    console.log(id)
+  create({ id, schedule, uri, httpMethod = "GET", body = null, timeZone = "UTC" }) {
     if (!cron.validate(schedule)) {
-      throw new Error('Invalid cron expression');
+      throw new Error("Invalid cron expression");
     }
 
     const task = cron.schedule(
@@ -18,10 +17,10 @@ class CronService {
       async () => {
         try {
           const response = await axios({
-            method: method.toLowerCase(),
+            method: httpMethod,
             url: uri,
-            data: body,
-            headers: { 'Content-Type': 'application/json' }
+            data: typeof body === "string" ? { message: body } : body,
+            headers: { "Content-Type": "application/json" },
           });
           console.log(`[${id}] Executado - Status: ${response.status}`);
         } catch (err) {
@@ -37,9 +36,9 @@ class CronService {
   }
 
   // Atualizar (na verdade recria)
-  update(id, schedule, uri, method, body, timeZone) {
+  update({ id, schedule, uri, httpMethod, body, timeZone }) {
     this.delete(id);
-    this.create(id, schedule, uri, method, body, timeZone);
+    this.create({ id, schedule, uri, httpMethod, body, timeZone });
     console.log(`CRON ${id} atualizado`);
   }
 
@@ -59,7 +58,7 @@ class CronService {
   list() {
     return Array.from(this.activeCrons.keys()).map((id) => ({
       id,
-      running: this.activeCrons.get(id).running
+      running: this.activeCrons.get(id).running,
     }));
   }
 }
