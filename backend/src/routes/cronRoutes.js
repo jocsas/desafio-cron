@@ -61,7 +61,7 @@ router.delete("/:id", (req, res) => {
 
   const cron = cronJobs[index];
 
-  cronService.stop(cron.id);
+  cronService.delete(cron.id);
   cronJobs.splice(index, 1);
 
   res.json({ message: "CRON job deleted successfully" });
