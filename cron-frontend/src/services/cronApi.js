@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
 export const getCrons = () => axios.get(`${API_BASE}/crons`);
 export const createCron = (data) => axios.post(`${API_BASE}/crons`, data);
