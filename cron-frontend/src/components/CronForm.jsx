@@ -134,7 +134,7 @@ export default function CronForm({ cron, onSuccess }) {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <Stack spacing={2} sx={{ maxWidth: 700, margin: "30px auto" }}>
+        <Stack spacing={2} sx={{ maxWidth: 1000, margin: "30px auto" }}>
           <TextField
             label="URL"
             value={cronData.uri}

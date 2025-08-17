@@ -59,7 +59,7 @@ export default function CronList({ onEdit }) {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 900, margin: "0 auto" }}>
+    <Stack spacing={2} sx={{ maxWidth: 1000, margin: "0 auto" }}>
       <Typography variant="h5" gutterBottom>
         CRONs Ativos
       </Typography>
