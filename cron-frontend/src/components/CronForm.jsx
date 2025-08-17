@@ -49,7 +49,7 @@ export default function CronForm({ cron, onSuccess }) {
 
     if (field === "cronExp") {
       setCronError(
-        isValidCron(value, { alias: true, seconds: false })
+        isValidCron(value, { alias: true, seconds: true })
           ? ""
           : "Expressão CRON inválida!"
       );
@@ -72,6 +72,16 @@ export default function CronForm({ cron, onSuccess }) {
         setUrlError("URL inválida!");
       }
     }
+  };
+
+  const cleanForm = () => {
+    setCronData({
+      uri: "",
+      httpMethod: "POST",
+      body: "{}",
+      timeZone: "UTC",
+      cronExp: "",
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -108,6 +118,7 @@ export default function CronForm({ cron, onSuccess }) {
           message: "CRON atualizado!",
           severity: "success",
         });
+        cleanForm();
       } else {
         await createCron({ ...rest, schedule, body: parsedBody });
         setSnackbar({
@@ -115,6 +126,7 @@ export default function CronForm({ cron, onSuccess }) {
           message: "CRON criado!",
           severity: "success",
         });
+        cleanForm();
       }
       onSuccess();
     } catch (err) {
@@ -134,7 +146,7 @@ export default function CronForm({ cron, onSuccess }) {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <Stack spacing={2} sx={{ maxWidth: 1000, margin: "30px auto" }}>
+        <Stack spacing={2} sx={{ maxWidth: 1200, margin: "30px auto" }}>
           <TextField
             label="URL"
             value={cronData.uri}
