@@ -19,7 +19,6 @@ Sistema completo de gestão de CRON jobs com arquitetura distribuída, suporte a
 - [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Configuração](#-configuração)
 - [Monitoramento](#-monitoramento)
-- [Contribuição](#-contribuição)
 
 ## 🎯 Sobre o Projeto
 
@@ -268,10 +267,6 @@ Para aumentar o número de instâncias do backend:
 ```bash
 # Escalar para 3 instâncias
 docker-compose up -d --scale cron-backend=3
-
-# Verificar distribuição de carga
-curl -v http://backend.localhost/api/health
-```
 
 ## 📊 Monitoramento
 
