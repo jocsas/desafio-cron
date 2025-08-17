@@ -267,9 +267,7 @@ Para aumentar o número de instâncias do backend:
 ```bash
 # Escalar para 3 instâncias
 docker-compose up -d --scale cron-backend=3
-
-## 📊 Monitoramento
-
+```
 ### Métricas Disponíveis
 
 1. **Traefik Dashboard**: http://localhost:8080
@@ -344,7 +342,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para de
 
 ## 👤 Autor
 
-**Sua Nome**
+**Jocsã Santos**
 - GitHub: [@jocsas](https://github.com/jocsas)
 - LinkedIn: [Jocsã Santos](https://linkedin.com/in/jocsa)
 
