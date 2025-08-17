@@ -4,67 +4,106 @@ const cronService = require("../services/cronService");
 
 const router = express.Router();
 
-const cronJobs = [];
-
-router.get("/", (req, res) => {
-  res.json(cronJobs);
-});
-
-router.get("/:id", (req, res) => {
-  const cron = cronJobs.find((c) => c.id === req.params.id);
-  if (!cron) return res.status(404).json({ error: "CRON job not found" });
-  res.json(cron);
-});
-
-router.post("/", (req, res) => {
-  const { schedule, uri, httpMethod, body, timeZone } = req.body;
-
-  if (!schedule || !uri) {
-    return res.status(400).json({ error: "schedule e uri são obrigatórios" });
+router.get("/", async (req, res) => {
+  try {
+    const cronJobs = await cronService.list();
+    res.json(cronJobs);
+  } catch (error) {
+    console.error("Erro ao listar CRONs:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
   }
-
-  const cronData = {
-    id: uuidv4(),
-    schedule,
-    uri,
-    httpMethod,
-    body,
-    timeZone,
-    active: true,
-  };
-
-  cronJobs.push(cronData);
-
-  cronService.create(cronData);
-
-  res.status(201).json(cronData);
 });
 
-router.put("/:id", (req, res) => {
-  const cron = cronJobs.find((c) => c.id === req.params.id);
-  if (!cron) return res.status(404).json({ error: "CRON job not found" });
-
-  const { schedule, uri, httpMethod, body, timeZone } = req.body;
-
-  console.log(schedule, uri, httpMethod, body, timeZone);
-  Object.assign(cron, { schedule, uri, httpMethod, body, timeZone });
-
-  cronService.update({ id: cron.id, schedule, uri, httpMethod, body, timeZone });
-
-  res.json(cron);
+router.get("/:id", async (req, res) => {
+  try {
+    const cronJobs = await cronService.list();
+    const cron = cronJobs.find((c) => c.id === req.params.id);
+    
+    if (!cron) {
+      return res.status(404).json({ error: "CRON job not found" });
+    }
+    
+    res.json(cron);
+  } catch (error) {
+    console.error("Erro ao buscar CRON:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
 });
 
-router.delete("/:id", (req, res) => {
-  const index = cronJobs.findIndex((c) => c.id === req.params.id);
-  if (index === -1)
-    return res.status(404).json({ error: "CRON job not found" });
+router.post("/", async (req, res) => {
+  try {
+    const { schedule, uri, httpMethod, body, timeZone } = req.body;
 
-  const cron = cronJobs[index];
+    if (!schedule || !uri) {
+      return res.status(400).json({ error: "schedule e uri são obrigatórios" });
+    }
 
-  cronService.delete(cron.id);
-  cronJobs.splice(index, 1);
+    const cronData = {
+      id: uuidv4(),
+      schedule,
+      uri,
+      httpMethod: httpMethod || "POST",
+      body,
+      timeZone: timeZone || "UTC",
+    };
 
-  res.json({ message: "CRON job deleted successfully" });
+    const createdCron = await cronService.create(cronData);
+    
+    res.status(201).json(createdCron);
+  } catch (error) {
+    console.error("Erro ao criar CRON:", error);
+    res.status(500).json({ 
+      error: "Erro ao criar CRON job",
+      details: error.message 
+    });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  try {
+    const { schedule, uri, httpMethod, body, timeZone } = req.body;
+
+    const updatedCron = await cronService.update({
+      id: req.params.id,
+      schedule,
+      uri,
+      httpMethod,
+      body,
+      timeZone,
+    });
+
+    res.json(updatedCron);
+  } catch (error) {
+    console.error("Erro ao atualizar CRON:", error);
+    
+    if (error.message === "CRON job not found") {
+      return res.status(404).json({ error: "CRON job not found" });
+    }
+    
+    res.status(500).json({ 
+      error: "Erro ao atualizar CRON job",
+      details: error.message 
+    });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    await cronService.delete(req.params.id);
+    
+    res.json({ message: "CRON job deleted successfully" });
+  } catch (error) {
+    console.error("Erro ao deletar CRON:", error);
+    
+    if (error.message === "CRON job not found") {
+      return res.status(404).json({ error: "CRON job not found" });
+    }
+    
+    res.status(500).json({ 
+      error: "Erro ao deletar CRON job",
+      details: error.message 
+    });
+  }
 });
 
 module.exports = router;
