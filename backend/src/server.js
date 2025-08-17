@@ -27,7 +27,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get('/health', async (req, res) => {
+app.get('/api/health', async (req, res) => {
   try {
     const health = await cronService.healthCheck();
     
