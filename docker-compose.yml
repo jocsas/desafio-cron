@@ -1,0 +1,111 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - cron-network
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11
+    container_name: desafio-cron-db
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: cron_db
+      MARIADB_USER: cron_user
+      MARIADB_PASSWORD: cron_pass
+      MARIADB_AUTO_UPGRADE: 1
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./init-permissions.sql:/docker-entrypoint-initdb.d/init-permissions.sql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --bind-address=0.0.0.0
+    healthcheck:
+      test: ["CMD", "mariadb", "-h", "localhost", "-u", "cron_user", "-pcron_pass", "-D", "cron_db", "-e", "SELECT 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+    networks:
+      - cron-network
+
+  redis:
+    image: redis:7
+    container_name: cron-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cron-network
+
+  cron-backend:
+    build: ./backend
+    environment:
+      SERVER_API_PORT: 3001
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: cron_user
+      DB_PASS: cron_pass
+      DB_NAME: cron_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cron-backend.rule=Host(`backend.localhost`)"
+      - "traefik.http.services.cron-backend.loadbalancer.server.port=3001"
+    networks:
+      - cron-network
+    restart: unless-stopped
+
+  cron-receiver:
+    build: ./receiver
+    environment:
+      - RECEIVER_API_PORT=3002
+      - LOGS_DIR=/app/logs
+    volumes:
+      - receiver-logs:/app/logs
+    networks:
+      - cron-network
+    restart: unless-stopped
+
+  cron-frontend:
+    build: ./cron-frontend
+    environment:
+      - VITE_BACKEND_URL=http://backend.localhost/api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cron-frontend.rule=Host(`frontend.localhost`)"
+      - "traefik.http.services.cron-frontend.loadbalancer.server.port=5173"
+    networks:
+      - cron-network
+    restart: unless-stopped
+
+networks:
+  cron-network:
+
+volumes:
+  receiver-logs:
+  db-data:
