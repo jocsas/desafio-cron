@@ -1,10 +1,11 @@
-# 🚀 Desafio CRON GLARTEK - Sistema de Gestão de Agendamentos
+# 🚀 Sistema CRON Distribuído - Gestão de Agendamentos em Cluster
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
 
-Sistema completo de gestão de CRON jobs com arquitetura distribuída, suporte a cluster e interface web moderna.
+Sistema completo de gestão de CRON jobs com arquitetura distribuída, sincronização em tempo real via SSE e interface web moderna.
 
 ## 📋 Índice
 
@@ -14,73 +15,88 @@ Sistema completo de gestão de CRON jobs com arquitetura distribuída, suporte a
 - [Tecnologias](#-tecnologias)
 - [Pré-requisitos](#-pré-requisitos)
 - [Instalação](#-instalação)
+- [Configuração de Desenvolvimento](#-configuração-de-desenvolvimento)
 - [Uso](#-uso)
 - [API Endpoints](#-api-endpoints)
+- [Monitoramento em Tempo Real](#-monitoramento-em-tempo-real)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Configuração](#-configuração)
-- [Monitoramento](#-monitoramento)
+- [Escalabilidade](#-escalabilidade)
 
 ## 🎯 Sobre o Projeto
 
-Este projeto implementa um serviço robusto de gestão de CRON jobs que permite:
+Sistema robusto de gestão de CRON jobs distribuído que resolve problemas reais de agendamento em ambientes de produção:
 
-- **Agendar tarefas** com expressões CRON personalizadas
-- **Notificar serviços externos** via HTTP quando os jobs executam
-- **Gerenciar múltiplas instâncias** em cluster para alta disponibilidade
-- **Interface web intuitiva** para configuração e monitoramento
-- **Logs centralizados** de todas as execuções
+- **Execução distribuída** sem duplicação entre instâncias
+- **Sincronização em tempo real** via Server-Sent Events (SSE)
+- **Interface web intuitiva** com status dinâmico dos jobs
+- **Alta disponibilidade** com load balancer e failover automático
+- **Monitoramento completo** com logs centralizados e métricas
 
 ### 💡 Problema Resolvido
 
-Muitas aplicações precisam executar tarefas agendadas de forma confiável. Este sistema oferece:
-- Execução distribuída sem duplicação
-- Interface amigável para não-técnicos
-- Monitoramento em tempo real
-- Alta disponibilidade com failover automático
+Aplicações modernas precisam de sistemas de agendamento confiáveis que funcionem em clusters. Este projeto oferece:
+- Coordenação automática entre múltiplas instâncias
+- Prevenção de execuções duplicadas via Redis locks
+- Interface visual para gerenciamento não-técnico
+- Observabilidade completa do sistema
 
 ## ⭐ Características
 
-### 🔧 Funcionalidades Core
-- ✅ **CRUD completo** de CRON jobs
-- ✅ **Suporte a timezones** customizados
-- ✅ **HTTP methods variados** (GET, POST, PUT, DELETE)
-- ✅ **Body customizável** para requisições
-- ✅ **Validação de expressões CRON**
+### 🔧 Funcionalidades Avançadas
+- ✅ **CRUD completo** com sincronização Pub/Sub entre instâncias
+- ✅ **Status em tempo real** via Server-Sent Events (SSE)
+- ✅ **Coordenação distribuída** com Redis locks
+- ✅ **Health checks** automáticos e diagnóstico
+- ✅ **Graceful shutdown** para finalização limpa
+- ✅ **Timezones customizados** com suporte internacional
+- ✅ **Validação robusta** de expressões CRON
 
-### 🏗️ Arquitetura Avançada
-- ✅ **Cluster distribuído** com múltiplas instâncias
-- ✅ **Load balancer** com Traefik
-- ✅ **Cache Redis** para sincronização
-- ✅ **Banco MariaDB** para persistência
-- ✅ **Health checks** automáticos
+### 🏗️ Arquitetura Empresarial
+- ✅ **Cluster distribuído** com balanceamento automático
+- ✅ **Pub/Sub Redis** para sincronização de estado
+- ✅ **Load balancer Traefik** com service discovery
+- ✅ **Persistência MariaDB** com transações ACID
+- ✅ **Logs estruturados** para auditoria e debug
 
-### 🖥️ Interface & Monitoramento  
-- ✅ **Frontend React** moderno e responsivo
-- ✅ **Logs estruturados** em arquivos
-- ✅ **Dashboard Traefik** para monitoramento
-- ✅ **Status em tempo real** dos jobs
+### 🖥️ Interface Moderna  
+- ✅ **React + Material-UI** responsivo e acessível
+- ✅ **Updates em tempo real** sem refresh da página
+- ✅ **Status indicators** visuais (Aguardando/Executando/Parado)
+- ✅ **Logs centralizados** com timestamps precisos
 
 ## 🏛️ Arquitetura
 
 ```mermaid
 graph TB
     U[👤 Usuário] --> T[🌐 Traefik Load Balancer]
-    T --> F[🎨 Frontend React]
+    T --> F[🎨 Frontend React + SSE]
     T --> B1[⚙️ Backend Instance 1]
     T --> B2[⚙️ Backend Instance 2]
+    T --> B3[⚙️ Backend Instance N...]
     
     B1 --> DB[(🗄️ MariaDB)]
     B2 --> DB
-    B1 --> R[📦 Redis Cache]
-    B2 --> R
+    B3 --> DB
+    
+    B1 <--> R[📦 Redis Pub/Sub]
+    B2 <--> R
+    B3 <--> R
     
     B1 --> REC[📡 Receiver Service]
     B2 --> REC
+    B3 --> REC
+    
+    subgraph "🔄 Sincronização"
+        R --> PUB[cron-created]
+        R --> PUB2[cron-updated]  
+        R --> PUB3[cron-deleted]
+    end
     
     subgraph "🐳 Docker Containers"
         F
         B1
         B2
+        B3
         DB
         R
         REC
@@ -88,40 +104,43 @@ graph TB
     end
 ```
 
-### Fluxo de Execução
+### Fluxo de Sincronização
 
-1. **Usuário** cria um CRON job via interface web
-2. **Load Balancer** distribui requisições entre instâncias
-3. **Backend** valida e armazena o job no banco
-4. **Redis** sincroniza estado entre instâncias
-5. **Scheduler** executa jobs no horário programado
-6. **Receiver** registra notificações recebidas
+1. **Operação CRUD** → Backend atualiza banco de dados
+2. **Pub/Sub Redis** → Notifica todas as instâncias da mudança
+3. **Sincronização automática** → Instâncias param/iniciam/atualizam crons
+4. **SSE Stream** → Frontend recebe status em tempo real
+5. **UI atualizada** → Usuário vê mudanças instantaneamente
 
 ## 🛠️ Tecnologias
 
-### Backend
-- **Node.js 18+** - Runtime JavaScript
-- **Express** - Framework web
-- **node-cron** - Agendamento de tarefas
-- **Sequelize** - ORM para banco de dados
-- **Redis** - Cache distribuído
+### Backend Avançado
+- **Node.js 18+** - Runtime com ES modules
+- **Express** - API REST com middleware customizado
+- **node-cron** - Scheduler robusto com timezone support
+- **Sequelize ORM** - Migrations e relacionamentos
+- **ioredis** - Cliente Redis com Pub/Sub e clustering
+- **Server-Sent Events** - Streaming de status em tempo real
 
-### Frontend
-- **React** - Biblioteca UI
-- **Vite** - Build tool moderna
-- **Axios** - Cliente HTTP
+### Frontend Moderno
+- **React 18** - Hooks, Suspense e Error Boundaries  
+- **Material-UI v5** - Componentes acessíveis e responsivos
+- **Axios** - Cliente HTTP com interceptors
+- **EventSource** - SSE client com reconexão automática
 
-### Infraestrutura
-- **Docker Compose** - Orquestração de containers
-- **Traefik** - Load balancer e proxy reverso
-- **MariaDB** - Banco de dados relacional
-- **Redis** - Cache em memória
+### Infraestrutura Cloud-Ready
+- **Docker Compose** - Orquestração multi-container
+- **Traefik v3** - Load balancer com SSL automático
+- **MariaDB 11** - RDBMS com replicação
+- **Redis 7** - Cache, Pub/Sub e distributed locks
 
 ## 📋 Pré-requisitos
 
-- **Docker** 20.10+
-- **Docker Compose** 2.0+
-- **Git**
+- **Docker Engine** 24.0+
+- **Docker Compose** 2.21+
+- **Git** 2.30+
+- **4GB RAM** disponível
+- **Portas livres**: 80, 443, 8080
 
 ## 🚀 Instalação
 
@@ -131,208 +150,387 @@ git clone https://github.com/jocsas/desafio-cron.git
 cd desafio-cron
 ```
 
-### 2. Inicie os serviços
+### 2. Ambiente de Produção
 ```bash
-# Suba toda a infraestrutura
-docker-compose up -d
+# Build e inicia todos os serviços
+docker compose up --build -d
 
-# Verifique se todos os containers estão rodando
-docker-compose ps
+# Verifica status dos containers
+docker compose ps
 ```
 
-### 3. Aguarde a inicialização
+### 3. Monitore a inicialização
 ```bash
-# Monitore os logs de inicialização
-docker-compose logs -f
+# Acompanha logs de inicialização
+docker compose logs -f
 
-# Aguarde até ver "Servidor rodando na porta 3001"
+# Aguarde mensagens:
+# ✅ "Servidor rodando na porta 3001"
+# ✅ "X CRONs carregados do DB e iniciados"
+# ✅ "SSE conectado"
 ```
 
-### 4. Acesse as interfaces
+### 4. Acesse o sistema
 
-| Serviço | URL | Descrição |
-|---------|-----|-----------|
+| Serviço | URL Local | Descrição |
+|---------|-----------|-----------|
 | 🎨 **Frontend** | http://frontend.localhost | Interface principal |
-| ⚙️ **Backend API** | http://backend.localhost/api | API REST |
-| 📊 **Traefik Dashboard** | http://localhost:8080 | Monitoramento do cluster |
+| ⚙️ **Backend API** | http://backend.localhost/api | API REST + SSE |
+| 📊 **Traefik Dashboard** | http://localhost:8080 | Load balancer status |
+| 📡 **Receiver Logs** | `docker logs cron-receiver` | Webhook receiver |
+
+## 🛠️ Configuração de Desenvolvimento
+
+Para desenvolvimento local com hot-reload e debug:
+
+### 1. Use o override de desenvolvimento
+```bash
+# O arquivo docker-compose.override.yml é automaticamente usado
+docker compose up --build -d
+
+# Ou especificamente:
+docker compose -f docker-compose.yml -f docker-compose.override.yml up --build -d
+```
+
+### 2. Recursos de desenvolvimento disponíveis
+- **Hot reload** no frontend (Vite dev server)
+- **Nodemon** no backend para restart automático
+- **Volume mounts** para código local
+- **Debug ports** expostos
+- **Logs detalhados** habilitados
+
+### 3. Estrutura dos arquivos compose
+```
+docker-compose.yml          # Configuração base (produção)
+docker-compose.override.yml # Sobrescreve para desenvolvimento
+```
+
+### 4. Debug e logs
+```bash
+# Logs específicos por serviço
+docker compose logs -f cron-backend
+docker compose logs -f cron-frontend
+docker compose logs -f redis
+
+# Debug do Redis Pub/Sub
+docker compose exec redis redis-cli monitor
+```
 
 ## 💻 Uso
 
 ### Criar um CRON Job
 
-1. Acesse http://frontend.localhost
-2. Preencha o formulário:
-   - **URI**: `http://localhost:3002/webhook`
-   - **Método**: `POST`
-   - **Body**: `{"message": "Hello World!"}`
-   - **Schedule**: `*/5 * * * *` (a cada 5 minutos)
-   - **Timezone**: `America/Sao_Paulo`
+1. **Acesse** http://frontend.localhost
+2. **Preencha o formulário**:
+   ```json
+   URI: http://localhost:3002/webhook
+   Método: POST
+   Body: {"message": "Hello World!", "timestamp": "$(date)"}
+   Schedule: */30 * * * * (a cada 30 segundos)
+   Timezone: Europe/Lisbon
+   ```
+3. **Clique "Criar CRON"**
+4. **Observe** status mudando para "Aguardando" em tempo real
 
-3. Clique em "Criar CRON"
+### Monitorar em Tempo Real
 
-### Monitorar Execuções
+A interface atualiza automaticamente via SSE mostrando:
+- 🟢 **Aguardando** - Cron agendado, esperando próxima execução
+- 🟠 **Executando** - Fazendo requisição HTTP neste momento  
+- 🔴 **Parado** - Não agendado nesta instância
+- 🔘 **Desconhecido** - Sem conexão SSE
 
+### Logs Detalhados
 ```bash
-# Ver logs do receiver (onde chegam as notificações)
+# Execuções dos crons
+docker compose logs -f cron-backend
+
+# Webhooks recebidos
 docker logs -f cron-receiver
 
-# Ver logs do backend
-docker-compose logs -f cron-backend
-
-# Ver arquivo de log das notificações
-docker exec cron-receiver cat /app/logs/cron-notifications.log
+# Arquivo estruturado de notificações
+docker compose exec cron-receiver cat /app/logs/cron-notifications.log
 ```
 
 ## 📡 API Endpoints
 
-### CRON Jobs
+### CRON Jobs CRUD
+| Método | Endpoint | Descrição | Pub/Sub |
+|--------|----------|-----------|---------|
+| `GET` | `/api/crons` | Lista todos os CRONs | - |
+| `POST` | `/api/crons` | Cria novo CRON | `cron-created` |
+| `PUT` | `/api/crons/:id` | Atualiza CRON | `cron-updated` |
+| `DELETE` | `/api/crons/:id` | Remove CRON | `cron-deleted` |
 
+### Status e Monitoramento
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| `GET` | `/api/crons` | Listar todos os CRON jobs |
-| `POST` | `/api/crons` | Criar novo CRON job |
-| `GET` | `/api/crons/:id` | Buscar CRON específico |
-| `PUT` | `/api/crons/:id` | Atualizar CRON job |
-| `DELETE` | `/api/crons/:id` | Deletar CRON job |
+| `GET` | `/api/crons/status/stream` | **SSE** - Status em tempo real |
+| `GET` | `/api/health` | Health check da instância |
 
-### Exemplo de Payload
-
+### Exemplo de Payload Completo
 ```json
 {
-  "uri": "http://localhost:3002/webhook",
-  "httpMethod": "POST",
-  "body": "{\"message\": \"Executado às $(date)\"}",
-  "schedule": "0 9 * * *",
-  "timeZone": "America/Sao_Paulo"
-}
-```
-
-### Health Check
-```bash
-curl http://backend.localhost/api/health
-```
-
-## 📁 Estrutura do Projeto
-
-```
-desafio-cron/
-├── 🗂️ backend/                    # API REST e CRON engine
-│   ├── 📄 Dockerfile
-│   ├── 📦 package.json
-│   └── 📂 src/
-│       ├── 🗃️ models/            # Modelos de dados
-│       ├── 🛣️ routes/            # Rotas da API
-│       ├── 🚀 server.js          # Servidor principal
-│       └── ⚙️ services/          # Lógica de negócio
-├── 🎨 cron-frontend/              # Interface web React
-│   ├── 📄 Dockerfile
-│   ├── 📦 package.json
-│   └── 📂 src/
-│       ├── 📱 App.jsx
-│       ├── 🧩 components/        # Componentes React
-│       └── 🔌 services/          # Integração com API
-├── 📡 receiver/                   # Serviço de notificações
-│   ├── 📄 Dockerfile
-│   ├── 📦 package.json
-│   ├── 📂 logs/                  # Logs das notificações
-│   └── 📂 src/
-├── 🐳 docker-compose.yml         # Orquestração dos serviços
-└── 📋 init-permissions.sql       # Setup inicial do banco
-```
-
-## ⚙️ Configuração
-
-### Variáveis de Ambiente
-
-#### Backend
-```env
-SERVER_API_PORT=3001          # Porta da API
-DB_HOST=db                    # Host do banco
-DB_USER=cron_user            # Usuário do banco
-DB_PASS=cron_pass            # Senha do banco
-DB_NAME=cron_db              # Nome do banco
-REDIS_HOST=redis             # Host do Redis
-REDIS_PORT=6379              # Porta do Redis
-```
-
-#### Frontend
-```env
-VITE_BACKEND_URL=http://backend.localhost/api
-```
-
-### Escalabilidade
-
-Para aumentar o número de instâncias do backend:
-
-```bash
-# Escalar para 3 instâncias
-docker-compose up -d --scale cron-backend=3
-```
-### Métricas Disponíveis
-
-1. **Traefik Dashboard**: http://localhost:8080
-   - Status dos backends
-   - Distribuição de requisições
-   - Health checks
-
-2. **Logs de Aplicação**:
-   ```bash
-   # Backend logs
-   docker-compose logs cron-backend
-   
-   # Receiver logs
-   docker logs cron-receiver
-   
-   # Arquivo de notificações
-   tail -f receiver/logs/cron-notifications.log
-   ```
-
-3. **Status do Banco**:
-   ```bash
-   docker exec cron-db mariadb -u cron_user -pcron_pass cron_db -e "SELECT COUNT(*) as total_jobs FROM CronJobs;"
-   ```
-
-### Troubleshooting
-
-| Problema | Solução |
-|----------|---------|
-| 🔴 Container não sobe | Verifique logs com `docker-compose logs [serviço]` |
-| 🔴 Banco não conecta | Aguarde health check com `docker-compose ps` |
-| 🔴 Frontend não carrega | Verifique se backend está acessível |
-| 🔴 CRON não executa | Verifique logs do backend e valide expressão CRON |
-
-## 🧪 Exemplos de Uso
-
-### CRON para Backup Diário
-```json
-{
-  "uri": "http://backup-service:8080/daily-backup",
-  "httpMethod": "POST",
-  "body": "{\"type\": \"full\", \"retention\": 30}",
+  "uri": "http://external-service:8080/webhook",
+  "httpMethod": "POST", 
+  "body": {
+    "event": "scheduled_task",
+    "timestamp": "{{timestamp}}",
+    "data": {
+      "type": "backup",
+      "database": "production"
+    }
+  },
   "schedule": "0 2 * * *",
   "timeZone": "UTC"
 }
 ```
 
-### Notificação de Monitoramento
+## 📊 Monitoramento em Tempo Real
+
+### Server-Sent Events (SSE)
+```javascript
+// Frontend conecta automaticamente
+const eventSource = new EventSource('/api/crons/status/stream');
+
+eventSource.onmessage = (event) => {
+  const status = JSON.parse(event.data);
+  // Atualiza interface em tempo real
+  console.log('Status recebido:', status);
+};
+```
+
+### Estrutura do Status SSE
 ```json
 {
-  "uri": "http://monitoring:9090/health-check",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "totalCrons": 5,
+  "activeCrons": 3,
+  "crons": [
+    {
+      "id": "cron-123",
+      "schedule": "*/30 * * * *",
+      "uri": "http://localhost:3002/webhook",
+      "running": true,
+      "lastExecutedAt": "2025-08-17T18:04:16.010Z",
+      "isLocked": false
+    }
+  ]
+}
+```
+
+### Health Check Avançado
+```bash
+curl http://backend.localhost/api/health | jq .
+```
+```json
+{
+  "status": "healthy",
+  "instanceId": "instance-1",
+  "redis": "connected", 
+  "database": "connected",
+  "totalCronsDB": 10,
+  "activeCronsInstance": 8
+}
+```
+
+## 📁 Estrutura do Projeto
+
+```
+cron-distribuido/
+├── 🗂️ backend/                        # API REST + CRON Engine
+│   ├── 📄 Dockerfile
+│   ├── 📦 package.json
+│   └── 📂 src/
+│       ├── 🗃️ models/                # Sequelize models
+│       │   └── CronJob.js
+│       ├── 🛣️ routes/                # Express routes  
+│       │   ├── cronRoutes.js
+│       │   └── healthRoutes.js
+│       ├── ⚙️ services/              # Business logic
+│       │   └── cronService.js        # Core CRON logic
+│       ├── 🚀 server.js              # Express server
+│       └── 📄 database.js            # DB connection
+├── 🎨 cron-frontend/                  # React SPA
+│   ├── 📄 Dockerfile
+│   ├── 📦 package.json
+│   ├── 🔧 vite.config.js
+│   └── 📂 src/
+│       ├── 📱 App.jsx                # Main component
+│       ├── 🧩 components/            # React components
+│       │   ├── CronForm.jsx          # Create/Edit form
+│       │   └── CronList.jsx          # Real-time list
+│       └── 🔌 services/              # API integration
+│           └── cronApi.js            # Axios + SSE
+├── 📡 receiver/                       # Webhook receiver
+│   ├── 📄 Dockerfile
+│   ├── 📦 package.json
+│   ├── 📂 logs/                      # Structured logs
+│   │   └── cron-notifications.log
+│   └── 📂 src/
+│       └── server.js
+├── 🐳 docker-compose.yml             # Production setup
+├── 🛠️ docker-compose.override.yml    # Development overrides
+└── 📋 init-permissions.sql           # DB initialization
+```
+
+## 🚀 Escalabilidade
+
+### Scaling Horizontal
+```bash
+# Adiciona mais instâncias do backend
+docker compose up -d --scale cron-backend=5
+
+# Verifica distribuição no Traefik
+curl http://localhost:8080/api/http/services
+```
+
+### Configuração de Cluster
+```yaml
+# Em docker-compose.yml
+services:
+  cron-backend:
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+```
+
+### Métricas de Performance
+```bash
+# Status de todas as instâncias
+for i in {1..3}; do
+  curl -s http://backend.localhost/api/health | jq -r '.instanceId + ": " + .status'
+done
+
+# Monitoramento Redis
+docker compose exec redis redis-cli --latency-history -i 1
+```
+
+## 🔧 Configuração Avançada
+
+### Variáveis de Ambiente
+
+#### Backend
+```env
+# Servidor
+SERVER_API_PORT=3001
+NODE_ENV=production
+
+# Database
+DB_HOST=db
+DB_PORT=3306
+DB_USER=cron_user
+DB_PASS=cron_pass
+DB_NAME=cron_db
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Logs
+LOG_LEVEL=info
+LOG_FILE=./logs/app.log
+```
+
+#### Frontend
+```env
+# API Backend
+VITE_BACKEND_URL=http://backend.localhost/api
+
+# Features
+VITE_SSE_ENABLED=true
+VITE_DEBUG_MODE=false
+```
+
+### Segurança
+```bash
+# Redis com autenticação
+echo "requirepass your-redis-password" >> redis.conf
+
+# MariaDB com SSL
+# Configurar certificados em ./ssl/
+```
+
+## 🐛 Troubleshooting
+
+### Problemas Comuns
+
+| Sintoma | Causa Provável | Solução |
+|---------|----------------|---------|
+| 🔴 SSE não conecta | Backend não iniciado | `docker compose logs cron-backend` |
+| 🔴 Crons não executam | Redis desconectado | `docker compose restart redis` |
+| 🔴 Status "Desconhecido" | Pub/Sub falhou | Verificar logs Redis |
+| 🔴 Frontend branco | API inacessível | Verificar proxy Traefik |
+| 🔴 Execuções duplicadas | Lock Redis falhou | Reiniciar instâncias |
+
+### Debug Avançado
+```bash
+# Pub/Sub em tempo real
+docker compose exec redis redis-cli
+> SUBSCRIBE cron-created cron-updated cron-deleted
+
+# Locks ativos
+docker compose exec redis redis-cli KEYS "cron-lock:*"
+
+# Logs estruturados
+docker compose logs --tail=100 -t cron-backend | grep ERROR
+```
+
+### Performance Tuning
+```bash
+# Monitorar recursos
+docker stats
+
+# Otimizar Redis
+echo "maxmemory 512mb" | docker compose exec -T redis tee -a /etc/redis/redis.conf
+echo "maxmemory-policy allkeys-lru" | docker compose exec -T redis tee -a /etc/redis/redis.conf
+```
+
+## 🧪 Exemplos Práticos
+
+### Backup Automatizado
+```json
+{
+  "uri": "http://backup-service:8080/start-backup",
+  "httpMethod": "POST",
+  "body": {
+    "type": "incremental",
+    "databases": ["production", "analytics"],
+    "compression": true,
+    "retention_days": 30
+  },
+  "schedule": "0 3 * * *",
+  "timeZone": "UTC"
+}
+```
+
+### Monitoramento de Saúde
+```json
+{
+  "uri": "http://monitoring:9090/collect-metrics",
   "httpMethod": "GET",
-  "body": "",
-  "schedule": "*/10 * * * *",
+  "schedule": "*/2 * * * *",
   "timeZone": "America/Sao_Paulo"
 }
 ```
 
-### Limpeza de Logs Semanal
+### Processamento de Dados
 ```json
 {
-  "uri": "http://log-cleaner:3000/cleanup",
-  "httpMethod": "DELETE",
-  "body": "{\"older_than\": \"7d\"}",
-  "schedule": "0 0 * * 0",
-  "timeZone": "Europe/London"
+  "uri": "http://data-processor:3000/process-batch",
+  "httpMethod": "POST",
+  "body": {
+    "batch_size": 1000,
+    "source": "daily_transactions",
+    "target": "data_warehouse"
+  },
+  "schedule": "0 1 * * *",
+  "timeZone": "America/New_York"
 }
 ```
 
@@ -343,7 +541,10 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para de
 ## 👤 Autor
 
 **Jocsã Santos**
-- GitHub: [@jocsas](https://github.com/jocsas)
-- LinkedIn: [Jocsã Santos](https://linkedin.com/in/jocsa)
+- 🐙 GitHub: [@jocsas](https://github.com/jocsas)
+- 💼 LinkedIn: [Jocsã Santos](https://linkedin.com/in/jocsa)
+- 📧 Email: jocsa.dev@gmail.com
 
 ---
+
+⭐ **Se este projeto foi útil, considere dar uma estrela!** ⭐
