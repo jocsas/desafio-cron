@@ -14,15 +14,34 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/status-stream", async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const sendStatus = async () => {
+    const status = await cronService.getStatus();
+    res.write(`data: ${JSON.stringify(status)}\n\n`);
+  };
+
+  const interval = setInterval(sendStatus, 2000);
+  sendStatus();
+
+  req.on("close", () => {
+    clearInterval(interval);
+    res.end();
+  });
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const cronJobs = await cronService.list();
     const cron = cronJobs.find((c) => c.id === req.params.id);
-    
+
     if (!cron) {
       return res.status(404).json({ error: "CRON job not found" });
     }
-    
+
     res.json(cron);
   } catch (error) {
     console.error("Erro ao buscar CRON:", error);
@@ -48,13 +67,13 @@ router.post("/", async (req, res) => {
     };
 
     const createdCron = await cronService.create(cronData);
-    
+
     res.status(201).json(createdCron);
   } catch (error) {
     console.error("Erro ao criar CRON:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Erro ao criar CRON job",
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -75,14 +94,14 @@ router.put("/:id", async (req, res) => {
     res.json(updatedCron);
   } catch (error) {
     console.error("Erro ao atualizar CRON:", error);
-    
+
     if (error.message === "CRON job not found") {
       return res.status(404).json({ error: "CRON job not found" });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: "Erro ao atualizar CRON job",
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -90,18 +109,18 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     await cronService.delete(req.params.id);
-    
+
     res.json({ message: "CRON job deleted successfully" });
   } catch (error) {
     console.error("Erro ao deletar CRON:", error);
-    
+
     if (error.message === "CRON job not found") {
       return res.status(404).json({ error: "CRON job not found" });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: "Erro ao deletar CRON job",
-      details: error.message 
+      details: error.message,
     });
   }
 });

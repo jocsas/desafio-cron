@@ -6,3 +6,6 @@ export const getCrons = () => axios.get(`${API_BASE}/crons`);
 export const createCron = (data) => axios.post(`${API_BASE}/crons`, data);
 export const updateCron = (id, data) => axios.put(`${API_BASE}/crons/${id}`, data);
 export const deleteCron = (id) => axios.delete(`${API_BASE}/crons/${id}`);
+
+export const STATUS_STREAM_URL = `${API_BASE}/crons/status-stream`;
+
