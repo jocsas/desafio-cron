@@ -20,7 +20,7 @@ services:
 
   db:
     image: mariadb:11
-    container_name: desafio-cron-db
+    container_name: cron-db
     environment:
       MARIADB_ROOT_PASSWORD: root
       MARIADB_DATABASE: cron_db
@@ -82,6 +82,7 @@ services:
 
   cron-receiver:
     build: ./receiver
+    container_name: cron-receiver
     environment:
       - RECEIVER_API_PORT=3002
       - LOGS_DIR=/app/logs
@@ -93,6 +94,7 @@ services:
 
   cron-frontend:
     build: ./cron-frontend
+    container_name: cron-frontend
     environment:
       - VITE_BACKEND_URL=http://backend.localhost/api
     labels:
