@@ -5,6 +5,7 @@ const cors = require("cors");
 require("dotenv-flow").config();
 
 const cronRoutes = require("./routes/cronRoutes.js");
+const cronService = require("./services/cronService.js");
 
 const app = express();
 const PORT = process.env.SERVER_API_PORT || 3001;
@@ -26,18 +27,35 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get("/health", (req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    const health = await cronService.healthCheck();
+    
+    const statusCode = health.status === 'healthy' ? 200 : 503;
+    
+    res.status(statusCode).json({
+      timestamp: new Date().toISOString(),
+      ...health
+    });
+  } catch (err) {
+    res.status(503).json({
+      timestamp: new Date().toISOString(),
+      status: 'error',
+      error: err.message
+    });
+  }
 });
 
 app.use("/api/crons", cronRoutes);
 
 async function startServer() {
   try {
-    sequelize.sync().then(() => {
-      app.listen(PORT, () => {
-        console.log(`Backend rodando na porta ${PORT}`);
-      });
+    await sequelize.sync();
+
+    await cronService.loadFromDB();
+
+    app.listen(PORT, () => {
+      console.log(`Backend rodando na porta ${PORT}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);
