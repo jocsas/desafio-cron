@@ -137,7 +137,7 @@ class CronService {
       async () => {
         const lockKey = `cron-lock:${id}`;
         const lockValue = uuidv4();
-        const lockTTL = 300;
+        const lockTTL = 30000;
         
         const acquired = await redis.set(lockKey, lockValue, "NX", "EX", lockTTL);
         if (!acquired) {
