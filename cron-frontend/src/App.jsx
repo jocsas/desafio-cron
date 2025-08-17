@@ -3,7 +3,7 @@ import CronManager from "./components/CronManager";
 
 function App() {
   return (
-    <Container maxWidth="md" sx={{ paddingY: 4 }}>
+    <Container maxWidth="lg" sx={{ paddingY: 4 }}>
       <Paper sx={{ padding: 3, boxShadow: 3 }}>
         <Typography variant="h4" align="center" gutterBottom>
           Gestão de CRONs
